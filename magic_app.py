@@ -329,15 +329,33 @@ MANA_CSS = """
     box-shadow: 0 6px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .mtg-card-titlebar {
-    padding: 8px 14px;
+    padding: 10px 14px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
     font-family: 'Cinzel', serif;
     font-weight: 700;
     font-size: 1rem;
-    color: #f5e6c8;
+    background: linear-gradient(180deg, #2a2240 0%, #1e1830 100%);
     border-bottom: 1px solid rgba(201,162,39,0.3);
+}
+.mtg-card-titlebar-stripe {
+    width: 5px;
+    align-self: stretch;
+    border-radius: 3px;
+    flex-shrink: 0;
+    min-height: 22px;
+    box-shadow: 0 0 8px rgba(255,255,255,0.15);
+}
+.mtg-card-title {
+    flex: 1;
+    color: #f5e6c8;
+    letter-spacing: 0.04em;
+}
+.mtg-card-titlebar-mana {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
 }
 .mtg-card-body {
     display: flex;
@@ -524,9 +542,10 @@ def render_deck_card(deck: dict) -> str:
 
     return f"""
     <div class="mtg-card-frame">
-        <div class="mtg-card-titlebar" style="background:{gradient};">
-            <span>{deck['name']}</span>
-            <span style="display:flex;gap:4px;">{mana_cost}</span>
+        <div class="mtg-card-titlebar">
+            <div class="mtg-card-titlebar-stripe" style="background:{gradient};"></div>
+            <span class="mtg-card-title">{deck['name']}</span>
+            <span class="mtg-card-titlebar-mana">{mana_cost}</span>
         </div>
         <div class="mtg-card-body">
             <img class="mtg-card-art" src="{deck['image']}" alt="{deck['name']}" />
