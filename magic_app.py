@@ -2,7 +2,10 @@ import random
 
 import streamlit as st
 
-st.set_page_config(page_title="MTG Deck-Auslosung", page_icon="🧙", layout="wide")
+st.set_page_config(page_title="Kartenspiel-Toolkit", page_icon="🃏", layout="wide")
+
+MTG_START_LIFE = 20
+YGO_START_LIFE = 8000
 
 # Farbcodes der 5 Magic-Farben (+ farblos) für die Deck-Boxen
 COLOR_HEX = {
@@ -90,6 +93,23 @@ DECKS = [
 ]
 
 
+def _life_key(prefix: str) -> str:
+    return f"{prefix}_life"
+
+
+def init_life(prefix: str, start_life: int) -> None:
+    if _life_key(prefix) not in st.session_state:
+        st.session_state[_life_key(prefix)] = start_life
+
+
+def change_life(prefix: str, delta: int) -> None:
+    st.session_state[_life_key(prefix)] = max(0, st.session_state[_life_key(prefix)] + delta)
+
+
+def reset_life(prefix: str, start_life: int) -> None:
+    st.session_state[_life_key(prefix)] = start_life
+
+
 def render_deck_card(deck: dict) -> str:
     """Erzeugt HTML für eine ansprechende Deck-Karte mit Farbbox und Kartengrafik."""
     colors = deck["colors"]
@@ -129,6 +149,85 @@ def render_deck_card(deck: dict) -> str:
     """
 
 
+def render_life_tracker(
+    prefix: str,
+    player_label: str,
+    start_life: int,
+    deltas: tuple[int, ...],
+    accent_color: str,
+) -> None:
+    """Zeigt Lebenspunkte mit Schnellbuttons und Reset für einen Spieler."""
+    init_life(prefix, start_life)
+    life = st.session_state[_life_key(prefix)]
+
+    st.markdown(
+        f"""
+        <div style="
+            border-radius:14px;
+            padding:16px 20px;
+            background:#1e1e1e;
+            border:2px solid {accent_color};
+            box-shadow:0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom:12px;
+        ">
+            <div style="color:{accent_color}; font-size:1rem; font-weight:600; margin-bottom:8px;">
+                {player_label}
+            </div>
+            <div style="font-size:3rem; font-weight:800; color:#fafafa; line-height:1;">
+                {life:,}
+            </div>
+            <div style="color:#888; font-size:0.8rem; margin-top:4px;">
+                Lebenspunkte
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    minus_cols = st.columns(len(deltas))
+    for col, delta in zip(minus_cols, reversed(deltas), strict=True):
+        with col:
+            st.button(
+                f"−{delta:,}",
+                key=f"{prefix}_minus_{delta}",
+                on_click=change_life,
+                args=(prefix, -delta),
+                use_container_width=True,
+            )
+
+    plus_cols = st.columns(len(deltas))
+    for col, delta in zip(plus_cols, deltas, strict=True):
+        with col:
+            st.button(
+                f"+{delta:,}",
+                key=f"{prefix}_plus_{delta}",
+                on_click=change_life,
+                args=(prefix, delta),
+                use_container_width=True,
+            )
+
+    st.button(
+        f"↺ Auf {start_life:,} zurücksetzen",
+        key=f"{prefix}_reset",
+        on_click=reset_life,
+        args=(prefix, start_life),
+        use_container_width=True,
+    )
+
+
+def render_dual_life_trackers(
+    prefix: str,
+    start_life: int,
+    deltas: tuple[int, ...],
+) -> None:
+    """Lebenstracker für beide Spieler nebeneinander."""
+    col1, col2 = st.columns(2, gap="large")
+    with col1:
+        render_life_tracker(f"{prefix}_p1", "🔵 Spieler 1", start_life, deltas, "#4A90D9")
+    with col2:
+        render_life_tracker(f"{prefix}_p2", "🔴 Spieler 2", start_life, deltas, "#E74C3C")
+
+
 def draw_decks():
     """Wählt 4 der 10 Decks ohne Überschneidung und verteilt je 2 an jeden Spieler."""
     chosen = random.sample(DECKS, 4)
@@ -136,31 +235,56 @@ def draw_decks():
     st.session_state["player2_decks"] = chosen[2:]
 
 
-st.title("🧙 Magic: The Gathering – Deck-Auslosung")
-st.caption(
-    "Die 10 Themen-Decks der Foundations Beginner Box werden gemischt – "
-    "4 zufällige Decks werden gezogen, je 2 pro Spieler, ganz ohne Überschneidungen."
-)
+def render_mtg_section() -> None:
+    st.title("🧙 Magic: The Gathering – Deck-Auslosung")
+    st.caption(
+        "Die 10 Themen-Decks der Foundations Beginner Box werden gemischt – "
+        "4 zufällige Decks werden gezogen, je 2 pro Spieler, ganz ohne Überschneidungen."
+    )
 
-st.button("🎲 Decks auslosen", on_click=draw_decks, type="primary", use_container_width=False)
+    st.button("🎲 Decks auslosen", on_click=draw_decks, type="primary", use_container_width=False)
 
-st.divider()
+    st.divider()
 
-if "player1_decks" in st.session_state and "player2_decks" in st.session_state:
-    col1, col2 = st.columns(2, gap="large")
+    if "player1_decks" in st.session_state and "player2_decks" in st.session_state:
+        col1, col2 = st.columns(2, gap="large")
 
-    with col1:
-        st.subheader("🔵 Spieler 1")
-        for deck in st.session_state["player1_decks"]:
+        with col1:
+            st.subheader("🔵 Spieler 1")
+            for deck in st.session_state["player1_decks"]:
+                st.markdown(render_deck_card(deck), unsafe_allow_html=True)
+
+        with col2:
+            st.subheader("🔴 Spieler 2")
+            for deck in st.session_state["player2_decks"]:
+                st.markdown(render_deck_card(deck), unsafe_allow_html=True)
+    else:
+        st.info("Klicke auf **Decks auslosen**, um die Decks für beide Spieler zu ziehen.")
+
+    with st.expander("📚 Alle verfügbaren Decks anzeigen"):
+        for deck in DECKS:
             st.markdown(render_deck_card(deck), unsafe_allow_html=True)
 
-    with col2:
-        st.subheader("🔴 Spieler 2")
-        for deck in st.session_state["player2_decks"]:
-            st.markdown(render_deck_card(deck), unsafe_allow_html=True)
-else:
-    st.info("Klicke auf **Decks auslosen**, um die Decks für beide Spieler zu ziehen.")
+    st.divider()
+    st.subheader("❤️ Lebenstracker")
+    st.caption(f"Startwert: {MTG_START_LIFE} Lebenspunkte pro Spieler (Standard-Format).")
+    render_dual_life_trackers("mtg", MTG_START_LIFE, (1, 5))
 
-with st.expander("📚 Alle verfügbaren Decks anzeigen"):
-    for deck in DECKS:
-        st.markdown(render_deck_card(deck), unsafe_allow_html=True)
+
+def render_yugioh_section() -> None:
+    st.title("🐉 Yu-Gi-Oh! – Lebenstracker")
+    st.caption(
+        f"Duell-Lebenspunkte für beide Spieler – Startwert {YGO_START_LIFE:,} LP "
+        "(Standard-Duellregeln)."
+    )
+
+    render_dual_life_trackers("ygo", YGO_START_LIFE, (50, 100, 500))
+
+
+tab_mtg, tab_ygo = st.tabs(["🧙 Magic: The Gathering", "🐉 Yu-Gi-Oh!"])
+
+with tab_mtg:
+    render_mtg_section()
+
+with tab_ygo:
+    render_yugioh_section()
