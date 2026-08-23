@@ -31,15 +31,31 @@ MANA_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
 
 /* ── Global ── */
-.block-container { padding-top: 1.5rem; max-width: 1100px; }
+:root {
+    /* Platz für Streamlit-Header + Cloud-Leiste (Share, GitHub, …) */
+    --toolbar-offset: 5.5rem;
+}
+
+.block-container {
+    padding-top: calc(var(--toolbar-offset) + 0.75rem);
+    max-width: 1100px;
+}
 .stApp { background: #080810; }
 
+/* Tabs unter der fixen Streamlit-Leiste halten, nicht darunter verstecken */
+.stTabs {
+    margin-bottom: 0.5rem;
+}
 .stTabs [data-baseweb="tab-list"] {
+    position: sticky;
+    top: var(--toolbar-offset);
+    z-index: 999;
     gap: 8px;
-    background: rgba(255,255,255,0.03);
+    background: #080810;
     border-radius: 14px;
-    padding: 6px;
+    padding: 8px 6px;
     border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.45);
 }
 .stTabs [data-baseweb="tab"] {
     font-family: 'Rajdhani', sans-serif;
